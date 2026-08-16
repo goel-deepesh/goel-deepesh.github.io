@@ -1,22 +1,11 @@
 #!/usr/bin/env python3
-"""
-Crop any photo into the square headshot the site uses.
+"""Crop a source photo into the square headshot used in the hero.
 
-Usage
------
-    python3 tools/make-headshot.py photo.jpg
-
-    # nudge the framing: --cx / --cy move the centre, --size zooms
     python3 tools/make-headshot.py photo.jpg --cx 883 --cy 600 --size 900
+    python3 tools/make-headshot.py photo.jpg --preview   # 3x3 contact sheet
 
-    # see nine framing options side by side before committing to one
-    python3 tools/make-headshot.py photo.jpg --preview
-
-Writes assets/headshot.jpg, assets/headshot.webp and assets/og-image.jpg.
-Coordinates are in pixels of the ORIGINAL photo, measured from the top-left.
---preview prints the numbers under each option so you can copy them straight back in.
-
-Requires Pillow:  pip install pillow
+Coordinates are in pixels of the source image, measured from the top-left.
+Smaller --size zooms in. Writes headshot.jpg, headshot.webp and og-image.jpg.
 """
 
 import argparse
