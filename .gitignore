@@ -3,4 +3,9 @@
 Thumbs.db
 __pycache__/
 *.pyc
+
+# local working files, not part of the deployed site
+DEPLOY.md
+EDITING.md
+assets/original-photo.jpg
 assets/_preview.jpg
