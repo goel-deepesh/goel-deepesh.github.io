@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A JEPA world model that learns without reconstructing | Deepesh Goel</title>
+<meta name="description" content="A recurrent Joint-Embedding Predictive Architecture trained on 2.5M frames of two-room navigation, using VICReg to prevent representational collapse. 1.89 MSE on agent position.">
+<link rel="canonical" href="https://www.deepeshgoel.com/work/jepa-world-model.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="A JEPA world model that learns without reconstructing">
+<meta property="og:description" content="Recurrent JEPA on 2.5M frames, VICReg against collapse, 1.89 MSE on agent position.">
+<meta property="og:image" content="https://www.deepeshgoel.com/assets/og-image.jpg">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../assets/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;650&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../index.html">Deepesh Goel</a>
+    <div class="nav-links">
+      <a href="../index.html#research" class="nav-hide-xxs">Background</a>
+      <a href="../index.html#work">Work</a>
+      <a href="../index.html#publications" class="nav-hide-xs">Publications</a>
+      <a href="../index.html#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+
+<header class="article-head">
+  <div class="wrap-narrow">
+    <a class="back-link" href="../index.html#work"><span>←</span> Selected work</a>
+    <p class="eyebrow">Self-supervised representation learning</p>
+    <h1>A JEPA world model that learns without reconstructing</h1>
+    <p class="lede">
+      Predicting the next frame teaches a model to render pixels. Predicting the next
+      <em>representation</em> teaches it something closer to structure, provided you can
+      stop it from taking the shortcut of predicting nothing at all.
+    </p>
+    <div class="article-meta">
+      <span class="chip">PyTorch</span>
+      <span class="chip">VICReg</span>
+      <span class="chip">Self-supervised</span>
+      <span class="chip">2.5M frames</span>
+    </div>
+  </div>
+</header>
+
+<div class="article-body">
+  <div class="wrap-narrow">
+
+    <h2>The idea</h2>
+    <p>
+      Generative world models are trained to reconstruct future observations, which forces
+      them to spend capacity on everything in the frame, including the texture, lighting
+      and noise that no downstream task cares about. A Joint-Embedding Predictive
+      Architecture avoids this by making its predictions in latent space: encode the
+      current observation, predict the <em>embedding</em> of the next one, and never
+      reconstruct a pixel.
+    </p>
+    <p>
+      The task was two-room navigation: an agent moving through a partitioned environment,
+      2.5 million frames of trajectories. Success was measured by probing the learned
+      representation for the agent's (x, y) position, a state variable never provided
+      during training. If the representation encodes it, the model has learned something
+      about the world rather than about the renderer.
+    </p>
+
+    <h2>Architecture</h2>
+    <p>
+      Two design decisions did most of the work.
+    </p>
+    <p>
+      <strong>Separate encoders for agent and wall channels.</strong> Walls are static; the
+      agent moves. Feeding both through one CNN forces a single representation to serve two
+      very different jobs, and the static structure, being far easier to predict,
+      dominates the loss. Splitting them into two CNN encoders lets the model keep a stable
+      map of the environment while tracking a moving object against it.
+    </p>
+    <p>
+      <strong>An autoregressive state predictor.</strong> The recurrent predictor rolls the
+      latent state forward conditioned on the action taken, so the model is trained to
+      maintain a consistent state estimate over a trajectory rather than a good guess about
+      the next single step.
+    </p>
+
+    <figure class="figure">
+      <svg viewBox="0 0 640 200" role="img" aria-label="Diagram: separate agent and wall CNN encoders feed a recurrent predictor trained with VICReg loss against the target encoder">
+        <defs>
+          <style>
+            .bx  { fill: var(--bg-raised); stroke: var(--rule-strong); stroke-width: 1; }
+            .bxa { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+            .tl  { font: 600 11.5px var(--sans); fill: var(--text); }
+            .ts  { font: 400 10px var(--sans); fill: var(--text-faint); }
+            .ar  { stroke: var(--text-faint); stroke-width: 1.2; fill: none; marker-end: url(#b); }
+            .ard { stroke: var(--accent); stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; marker-end: url(#c); }
+          </style>
+          <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--text-faint)"/></marker>
+          <marker id="c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+        </defs>
+
+        <rect class="bx" x="10" y="20" width="92" height="40" rx="4"/>
+        <text class="tl" x="56" y="38" text-anchor="middle">Agent channel</text>
+        <text class="ts" x="56" y="52" text-anchor="middle">CNN encoder</text>
+
+        <rect class="bx" x="10" y="76" width="92" height="40" rx="4"/>
+        <text class="tl" x="56" y="94" text-anchor="middle">Wall channel</text>
+        <text class="ts" x="56" y="108" text-anchor="middle">CNN encoder</text>
+
+        <path class="ar" d="M108 40 Q140 40 140 62 H166"/>
+        <path class="ar" d="M108 96 Q140 96 140 70 H166"/>
+
+        <rect class="bx" x="174" y="42" width="86" height="40" rx="4"/>
+        <text class="tl" x="217" y="60" text-anchor="middle">s<tspan dy="3" font-size="9">t</tspan></text>
+        <text class="ts" x="217" y="76" text-anchor="middle">latent state</text>
+
+        <rect class="bx" x="174" y="126" width="86" height="34" rx="4"/>
+        <text class="tl" x="217" y="147" text-anchor="middle">action a<tspan dy="3" font-size="9">t</tspan></text>
+
+        <path class="ar" d="M266 62 H302"/>
+        <path class="ar" d="M266 143 H284 Q302 143 302 110 V78"/>
+
+        <rect class="bxa" x="310" y="42" width="104" height="40" rx="4"/>
+        <text class="tl" x="362" y="60" text-anchor="middle">Predictor</text>
+        <text class="ts" x="362" y="76" text-anchor="middle">autoregressive</text>
+
+        <path class="ar" d="M420 62 H456"/>
+
+        <rect class="bx" x="464" y="42" width="76" height="40" rx="4"/>
+        <text class="tl" x="502" y="60" text-anchor="middle">ŝ<tspan dy="3" font-size="9">t+1</tspan></text>
+        <text class="ts" x="502" y="76" text-anchor="middle">predicted</text>
+
+        <rect class="bx" x="464" y="120" width="76" height="40" rx="4"/>
+        <text class="tl" x="502" y="138" text-anchor="middle">s<tspan dy="3" font-size="9">t+1</tspan></text>
+        <text class="ts" x="502" y="154" text-anchor="middle">target</text>
+
+        <path class="ard" d="M548 62 Q596 62 596 90 Q596 118 566 130"/>
+        <text class="ts" x="612" y="96" text-anchor="middle" fill="var(--accent)">VICReg</text>
+
+        <text class="ts" x="320" y="186" text-anchor="middle">no pixel reconstruction anywhere in the loss</text>
+      </svg>
+      <figcaption>
+        Agent and wall channels are encoded separately, combined into a latent state, and
+        rolled forward by an action-conditioned autoregressive predictor. The loss compares
+        predicted and target embeddings under VICReg, never images.
+      </figcaption>
+    </figure>
+
+    <h2>The collapse problem</h2>
+    <p>
+      Latent-space prediction has a degenerate solution that is always available and always
+      tempting: map every input to the same constant vector. Prediction error goes to zero,
+      the loss is perfectly minimised, and the representation carries no information
+      whatsoever. Left unchecked, this is where joint-embedding models go.
+    </p>
+
+    <div class="finding">
+      <p>
+        <strong>VICReg</strong> blocks the shortcut with two explicit terms: a
+        <em>variance</em> term that keeps each embedding dimension above a floor of
+        standard deviation, and a <em>covariance</em> term that decorrelates dimensions so
+        they cannot collude into carrying one signal redundantly. Together they make the
+        constant solution unreachable without any need for negative pairs, momentum
+        encoders or stop-gradients.
+      </p>
+    </div>
+
+    <p>
+      In practice this is the part of the build that determines whether the model works at
+      all. The variance and covariance weights are not decoration on the loss; they set
+      whether training converges to a useful representation or to an expensive way of
+      computing a constant. Monitoring embedding variance during training was more
+      informative than watching the prediction loss, which looks healthy right up until it
+      is describing nothing.
+    </p>
+
+    <h2>Training and results</h2>
+    <p>
+      2.5 million frames does not fit in memory. Data was loaded through memory-mapped
+      NumPy arrays so the operating system paged frames on demand rather than holding the
+      dataset resident, with training run in Singularity containers on HPC. Optimisation
+      used Adam with cosine learning-rate scheduling.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Training frames</td><td class="num">2,500,000</td></tr>
+          <tr><td>Agent (x, y) prediction error</td><td class="num">1.89 MSE</td></tr>
+          <tr><td>Reconstruction loss terms</td><td class="num">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      The probe recovered agent position at <strong>1.89 MSE</strong> from a representation
+      trained without ever being shown a coordinate. The model had induced the state
+      variable from the structure of the transitions alone.
+    </p>
+
+    <div class="pullquote">
+      The representation encoded where the agent was, having never been told that position
+      was a thing worth encoding.
+    </div>
+
+    <h2>What I took from it</h2>
+    <ul>
+      <li>
+        <strong>Architectural priors beat capacity.</strong> Separating the agent and wall
+        channels was a small change that reflected a real fact about the domain, and it
+        mattered more than making the encoders larger.
+      </li>
+      <li>
+        <strong>Watch the representation, not the loss.</strong> Prediction loss is not a
+        reliable health signal for joint-embedding models, because collapse minimises it.
+        Embedding variance is the diagnostic that actually tells you what is happening.
+      </li>
+      <li>
+        <strong>Engineering constraints shape the experiment.</strong> Memory-mapped loading
+        was not an optimisation detail. Without it, the 2.5M-frame scale that made the
+        result meaningful would have been out of reach.
+      </li>
+    </ul>
+
+    <p style="margin-top:2.5rem;color:var(--text-faint);font-size:0.9rem">
+      Project at NYU Courant, March to May 2026, advised by Prof. Yann LeCun.
+      <a href="https://github.com/goel-deepesh/JEPA-World-Model" rel="noopener" target="_blank">Code on GitHub</a>.
+    </p>
+
+    <div class="next-links">
+      <a class="next-link" href="fake-news-human-ai-divide.html">
+        <p class="eyebrow">Next</p>
+        <strong>Fake news detection collapses across the human-AI divide</strong>
+      </a>
+      <a class="next-link" href="figure-table-extraction.html">
+        <p class="eyebrow">Also</p>
+        <strong>Extracting figures and tables from scientific PDFs</strong>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>© <span id="year">2026</span> Deepesh Goel</span>
+    <span><a href="../index.html">deepeshgoel.com</a></span>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

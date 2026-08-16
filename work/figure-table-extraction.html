@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extracting figures and tables from scientific PDFs | Deepesh Goel</title>
+<meta name="description" content="A docling and vision-LLM pipeline that extracts figures and tables from scientific PDFs, links each to the body text discussing it, and emits structured JSON. 320/320 tables and 496/540 figures across 100 papers.">
+<link rel="canonical" href="https://www.deepeshgoel.com/work/figure-table-extraction.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Extracting figures and tables from scientific PDFs">
+<meta property="og:description" content="Layout-model extraction plus reference linking plus vision-LLM summarisation, evaluated across 100 papers from 10 publishers.">
+<meta property="og:image" content="https://www.deepeshgoel.com/assets/og-image.jpg">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../assets/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;650&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../index.html">Deepesh Goel</a>
+    <div class="nav-links">
+      <a href="../index.html#research" class="nav-hide-xxs">Background</a>
+      <a href="../index.html#work">Work</a>
+      <a href="../index.html#publications" class="nav-hide-xs">Publications</a>
+      <a href="../index.html#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+
+<header class="article-head">
+  <div class="wrap-narrow">
+    <a class="back-link" href="../index.html#work"><span>←</span> Selected work</a>
+    <p class="eyebrow">Document AI</p>
+    <h1>Extracting figures and tables from scientific PDFs</h1>
+    <p class="lede">
+      A figure is useless to a retrieval system without the paragraph that explains it.
+      This pipeline pulls both out of an arbitrary paper, pairs them, and returns
+      structured JSON that a downstream index can actually use.
+    </p>
+    <div class="article-meta">
+      <span class="chip">docling</span>
+      <span class="chip">Vision LLM</span>
+      <span class="chip">Gradio</span>
+      <span class="chip">Structured output</span>
+      <span class="chip">Python</span>
+      <span class="chip"><a href="https://deepesh-goel-figure-table-miner.hf.space/" rel="noopener" target="_blank" style="text-decoration:none;color:inherit">Live tool ↗</a></span>
+      <span class="chip"><a href="https://github.com/goel-deepesh/figure-table-miner" rel="noopener" target="_blank" style="text-decoration:none;color:inherit">GitHub ↗</a></span>
+    </div>
+  </div>
+</header>
+
+<div class="article-body">
+  <div class="wrap-narrow">
+
+    <h2>The problem</h2>
+    <p>
+      Search over a scientific corpus usually indexes prose and throws away everything
+      else. That is a strange choice, because in most papers the figures and tables carry
+      the result. A reader scanning for "the study where accuracy dropped off at high
+      b-values" is looking for a plot, not a sentence.
+    </p>
+    <p>
+      Indexing figures is harder than it sounds for two reasons. Extracting them reliably
+      is a real engineering problem. And a figure on its own is close to meaningless: the
+      caption is terse, and the interpretation lives in whatever paragraph references it,
+      which may be three pages away.
+    </p>
+
+    <div class="finding">
+      <p>
+        The output target was therefore not "images from a PDF" but <strong>an item per
+        figure or table, carrying its caption, the body text that discusses it, and a
+        structured summary</strong>, in a form that a retrieval or topic-modelling
+        pipeline can embed directly.
+      </p>
+    </div>
+
+    <h2>Why not PyMuPDF</h2>
+    <p>
+      The obvious approach is to walk the PDF and pull out embedded images with something
+      like <code>page.get_images()</code>. This fails on scientific papers, and it fails
+      silently.
+    </p>
+    <p>
+      A large share of scientific figures are not raster images at all. They are
+      <strong>vector graphics</strong>, sets of drawing operations emitted by matplotlib,
+      Illustrator or R. There is no image object to extract, so an image-object walker
+      returns nothing and reports no error. You get a clean run and a fraction of the
+      figures.
+    </p>
+    <p>
+      The pipeline uses <strong>docling</strong> instead, which runs a layout model over
+      each page and renders figure regions from predicted bounding boxes. Because it
+      operates on regions rather than embedded objects, it captures vector and raster
+      figures alike. It also recovers reading order across multi-column layouts, which
+      turns out to be the thing that makes the next stage possible at all.
+    </p>
+
+    <h2>Architecture</h2>
+
+    <figure class="figure">
+      <svg viewBox="0 0 640 214" role="img" aria-label="Pipeline diagram: PDF into docling extraction, then reference linking, then vision LLM summarisation, producing structured JSON">
+        <defs>
+          <style>
+            .bx  { fill: var(--bg-raised); stroke: var(--rule-strong); stroke-width: 1; }
+            .tl  { font: 600 11.5px var(--sans); fill: var(--text); }
+            .tm  { font: 500 9.5px var(--mono); fill: var(--text-faint); }
+            .ts  { font: 400 10px var(--sans); fill: var(--text-faint); }
+            .ar  { stroke: var(--text-faint); stroke-width: 1.1; fill: none; marker-end: url(#a); }
+          </style>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--text-faint)"/>
+          </marker>
+        </defs>
+
+        <rect class="bx" x="8" y="76" width="70" height="44"/>
+        <text class="tl" x="43" y="103" text-anchor="middle">PDF</text>
+
+        <path class="ar" d="M84 98 H116"/>
+
+        <rect class="bx" x="124" y="60" width="132" height="76"/>
+        <text class="tm" x="190" y="80" text-anchor="middle">miner.py</text>
+        <text class="tl" x="190" y="99" text-anchor="middle">docling layout</text>
+        <text class="ts" x="190" y="115" text-anchor="middle">figures · tables · text</text>
+        <text class="ts" x="190" y="150" text-anchor="middle">vector + raster</text>
+
+        <path class="ar" d="M262 98 H294"/>
+
+        <rect class="bx" x="302" y="60" width="132" height="76"/>
+        <text class="tm" x="368" y="80" text-anchor="middle">linker.py</text>
+        <text class="tl" x="368" y="99" text-anchor="middle">reference linking</text>
+        <text class="ts" x="368" y="115" text-anchor="middle">"see Figure 3" → item</text>
+        <text class="ts" x="368" y="150" text-anchor="middle">needs reading order</text>
+
+        <path class="ar" d="M440 98 H472"/>
+
+        <rect class="bx" x="480" y="60" width="152" height="76"/>
+        <text class="tm" x="556" y="80" text-anchor="middle">summarizer.py</text>
+        <text class="tl" x="556" y="99" text-anchor="middle">vision LLM</text>
+        <text class="ts" x="556" y="115" text-anchor="middle">structured JSON per item</text>
+        <text class="ts" x="556" y="150" text-anchor="middle">Claude, swappable</text>
+
+        <rect class="bx" x="124" y="176" width="310" height="30"/>
+        <text class="tm" x="279" y="195" text-anchor="middle">app.py · Gradio UI, deployable to HF Spaces</text>
+        <path class="ar" d="M190 140 V172"/>
+        <path class="ar" d="M368 140 V172"/>
+      </svg>
+      <figcaption>
+        Three independent stages behind one interface. Each is usable as a library on its
+        own, which is what allows the miner to be dropped into an existing indexing job
+        without the UI.
+      </figcaption>
+    </figure>
+
+    <h3>Linking figures to their discussion</h3>
+    <p>
+      The linker scans body text for references to each numbered item and attaches the
+      surrounding paragraphs, capped at five per item so a heavily-cited figure doesn't
+      drag half the paper along with it.
+    </p>
+    <p>
+      This stage is why the extraction choice mattered. Scientific papers are typically
+      two-column, and a naive text extraction interleaves the columns, producing sentences
+      that jump mid-clause from one column to the other. Reference matching against that
+      text finds fragments and mislinks them. Getting reading order right at stage one is
+      what makes stage two work on arbitrary papers rather than only on single-column
+      preprints.
+    </p>
+
+    <h3>Structured summarisation</h3>
+    <p>
+      Each figure image and its linked context go to a vision LLM, which returns a fixed
+      JSON schema rather than prose: <code>figure_type</code>, <code>subject</code>,
+      <code>scientific_insight</code>, <code>axes_or_elements</code>,
+      <code>key_data_points</code> and <code>embedded_equations</code>.
+    </p>
+    <p>
+      Fixed fields rather than free text is the deliberate part. A paragraph of description
+      is pleasant to read and awkward to index. Discrete fields can be embedded separately,
+      filtered on, or surfaced as facets, and the schema is a constant in
+      <code>summarizer.py</code> so it can be reshaped for whatever the downstream index
+      needs.
+    </p>
+
+    <h2>Evaluation</h2>
+    <p>
+      Tested across <strong>100 papers from 10 publishers</strong>, chosen for variety
+      because layout conventions differ substantially between them and a pipeline tuned on
+      one publisher's template tends to fall over on another.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Task</th><th>Detected</th><th>Rate</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Table detection</td><td class="num">320 / 320</td><td class="num">100%</td></tr>
+          <tr><td>Figure detection</td><td class="num">496 / 540</td><td class="num">92%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Table detection was exact across the corpus. Figure detection reached 92%, measured
+      against the figures actually present in each paper rather than against whatever the
+      pipeline happened to return, which is the stricter of the two denominators.
+    </p>
+
+    <div class="pullquote">
+      A figure with no linked discussion is an image in a database. A figure with its
+      three referencing paragraphs is a searchable claim.
+    </div>
+
+    <h2>Performance and deployment</h2>
+    <p>
+      A ten-page paper parses in 30 to 60 seconds on CPU. Layout models are a one-time
+      download of roughly 1 to 2 GB. Figure resolution is a knob, defaulting to about
+      144 DPI, and the summarisation model is swappable per run to trade cost against
+      capability on harder figures.
+    </p>
+    <p>
+      The Gradio front end runs as a <a href="https://deepesh-goel-figure-table-miner.hf.space/" rel="noopener" target="_blank">hosted tool on Hugging Face Spaces</a>,
+      which makes it usable by people who won't run a Python script, and it can be consumed programmatically through the
+      Gradio client so a dashboard can use the miner as a service and keep its own UX.
+    </p>
+
+    <h2>Known limits</h2>
+    <ul>
+      <li>
+        <strong>Scanned PDFs need OCR.</strong> docling can do it, but it must be enabled
+        explicitly and parsing gets slower.
+      </li>
+      <li>
+        <strong>Multi-panel figures come out whole.</strong> A figure with panels (a)
+        through (d) is extracted as one image, so panel-level summarisation isn't available.
+      </li>
+      <li>
+        <strong>Equations are described, not parsed.</strong> The vision model reads
+        equations inside figures but doesn't emit LaTeX. Getting parseable output would
+        mean adding a dedicated model such as pix2tex or nougat at the summarisation step.
+      </li>
+    </ul>
+
+    <p style="margin-top:2.4rem;color:var(--text-faint);font-size:0.875rem">
+      Built at the Predictive Analytics and AI Research Lab, NYU Courant, advised by
+      Prof. Anasse Bari.
+      <a href="https://deepesh-goel-figure-table-miner.hf.space/" rel="noopener" target="_blank">Try the tool</a> ·
+      <a href="https://github.com/goel-deepesh/figure-table-miner" rel="noopener" target="_blank">Code on GitHub</a>.
+    </p>
+
+    <div class="next-links">
+      <a class="next-link" href="fake-news-human-ai-divide.html">
+        <p class="eyebrow">Next</p>
+        <strong>Fake news detection collapses across the human-AI divide</strong>
+      </a>
+      <a class="next-link" href="jepa-world-model.html">
+        <p class="eyebrow">Also</p>
+        <strong>A JEPA world model that learns without reconstructing</strong>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>© <span id="year">2026</span> Deepesh Goel</span>
+    <span><a href="../index.html">deepeshgoel.com</a></span>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

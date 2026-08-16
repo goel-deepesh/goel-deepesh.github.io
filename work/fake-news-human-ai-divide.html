@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fake news detection across the human-AI divide | Deepesh Goel</title>
+<meta name="description" content="Fake-news detectors scoring 96.9–99.3% within their own datasets fall to 48.3–51.5% across the human-AI authorship boundary. An authorship classifier reaches 99.7%. ICBDA 2026.">
+<link rel="canonical" href="https://www.deepeshgoel.com/work/fake-news-human-ai-divide.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Fake news detection across the human-AI divide">
+<meta property="og:description" content="Detectors scoring 97–99% in-distribution fall to 48–51% across the human-AI authorship boundary.">
+<meta property="og:image" content="https://www.deepeshgoel.com/assets/og-image.jpg">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../assets/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;650&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../index.html">Deepesh Goel</a>
+    <div class="nav-links">
+      <a href="../index.html#research" class="nav-hide-xxs">Background</a>
+      <a href="../index.html#work">Work</a>
+      <a href="../index.html#publications" class="nav-hide-xs">Publications</a>
+      <a href="../index.html#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+
+<header class="article-head">
+  <div class="wrap-narrow">
+    <a class="back-link" href="../index.html#work"><span>←</span> Selected work</a>
+    <p class="eyebrow">ICBDA 2026 · Oral · Best Presentation Award</p>
+    <h1>Fake news detection collapses across the human-AI divide</h1>
+    <p class="lede">
+      Detectors that score 97–99% on their own test sets drop to 48–51% when the fake text
+      they are judging was written by a model rather than a person. The classifiers had
+      learned to identify the author, not the lie.
+    </p>
+    <div class="article-meta">
+      <span class="chip">RoBERTa</span>
+      <span class="chip">Dataset construction</span>
+      <span class="chip">Distribution shift</span>
+      <span class="chip">LLM evaluation</span>
+      <span class="chip">Advisor: Prof. Anasse Bari</span>
+    </div>
+  </div>
+</header>
+
+<div class="article-body">
+  <div class="wrap-narrow">
+
+    <h2>The problem</h2>
+    <p>
+      Automated fake-news detection looks, on paper, like a solved problem. Fine-tune a
+      transformer on a standard benchmark and you will comfortably clear 95% accuracy;
+      RoBERTa has been reported at 99.99% on ISOT. Those benchmarks share an assumption that
+      has quietly stopped being true: that the disinformation being detected was written by
+      a human being. ISOT, FakeNewsNet and LIAR were all assembled before large language
+      models existed.
+    </p>
+    <p>
+      That matters because the linguistic cues these detectors rely on are specific to human
+      writing. Prior work established that human-written fake news carries excess
+      first-person and second-person pronouns, hedging, subjectivity and simpler, more
+      repetitive prose. An LLM asked to write a plausible news article produces none of
+      those tells. So the question is whether veracity detectors have learned generic
+      signals of deception, or simply the stylistic fingerprint of the particular authors in
+      their training set.
+    </p>
+
+    <h2>Building a dataset that could answer it</h2>
+    <p>
+      Answering it requires varying authorship while holding the task constant, and no
+      existing dataset does that. So the study pairs <strong>ISOT</strong>, whose real and
+      fake articles are both human-authored (2016 to 2017), with <strong>GNews-Gemini</strong>,
+      a new dataset built for this purpose: real articles collected through the GNews API
+      (2021 to 2024), and fake counterparts generated from them by prompting Gemini 2.0
+      Flash Lite.
+    </p>
+    <p>
+      The fakes were not produced with a single "write something false" prompt. Each real
+      article was rewritten under one of five explicit manipulation strategies, so that
+      failure modes stay legible instead of averaging together.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Strategy</th><th>What the prompt asks for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Partisan Right</td><td>Reframes events for a conservative audience, adding fabricated detail to reinforce the narrative</td></tr>
+          <tr><td>Partisan Left</td><td>The mirror image, reframed for a progressive audience</td></tr>
+          <tr><td>Conspiracy</td><td>Introduces doubt about official explanations, implies hidden agendas, cites alleged insider information</td></tr>
+          <tr><td>Exaggeration</td><td>Amplifies scope with dramatic false detail and fabricated statistics</td></tr>
+          <tr><td>Narrative Shift</td><td>Keeps the real entities but alters their implications using fabricated quotes</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="finding">
+      <p>
+        Splitting the strategies is what makes the eventual result interpretable. Without it,
+        a transfer failure could be blamed on any number of things. With it, you can ask
+        whether models fail to generalise <strong>across manipulation type</strong> or
+        <strong>across authorship</strong>, and separate the two.
+      </p>
+    </div>
+
+    <h2>Experiments</h2>
+    <p>
+      RoBERTa was fine-tuned across five conditions: within-dataset on each corpus,
+      cross-dataset in both directions, mixed training on the combined data with a stratified
+      80/20 split, an authorship baseline separating ISOT fakes from Gemini fakes, and
+      leave-one-strategy-out, training on four Gemini strategies and testing on the held-out
+      fifth. All runs used three epochs on a single A100, batch size 16, learning rate
+      5 × 10⁻⁵, 500 warmup steps and weight decay 0.01, with the best per-epoch checkpoint
+      carried to test.
+    </p>
+
+    <figure class="figure">
+      <svg viewBox="0 0 640 260" role="img" aria-label="Bar chart of accuracy: ISOT within-dataset 99.3 percent, GNews-Gemini within-dataset 96.9 percent, ISOT to GNews-Gemini 48.3 percent, GNews-Gemini to ISOT 51.5 percent, authorship classifier 99.7 percent">
+        <defs>
+          <style>
+            .ax   { stroke: var(--rule-strong); stroke-width: 1; }
+            .grid { stroke: var(--rule); stroke-width: 1; }
+            .lbl  { font: 400 10.5px var(--sans); fill: var(--text-faint); }
+            .val  { font: 600 13px var(--sans); fill: var(--text); }
+            .barA { fill: var(--accent); }
+            .barB { fill: var(--rule-strong); }
+          </style>
+        </defs>
+
+        <line class="grid" x1="52" y1="40"  x2="628" y2="40"/>
+        <line class="grid" x1="52" y1="88"  x2="628" y2="88"/>
+        <line class="grid" x1="52" y1="184" x2="628" y2="184"/>
+        <text class="lbl" x="24" y="44">100</text>
+        <text class="lbl" x="30" y="92">75</text>
+        <text class="lbl" x="30" y="140">50</text>
+        <text class="lbl" x="30" y="188">25</text>
+
+        <line x1="52" y1="136" x2="628" y2="136" stroke="var(--text-faint)" stroke-width="1" stroke-dasharray="3 3" opacity=".8"/>
+        <text class="lbl" x="626" y="131" text-anchor="end">chance</text>
+
+        <line class="ax" x1="52" y1="232" x2="628" y2="232"/>
+
+        <rect class="barA" x="70"  y="44"  width="72" height="188"/>
+        <text class="val" x="106" y="36" text-anchor="middle">99.3</text>
+        <text class="lbl" x="106" y="248" text-anchor="middle">ISOT</text>
+
+        <rect class="barA" x="180" y="53"  width="72" height="179"/>
+        <text class="val" x="216" y="45" text-anchor="middle">96.9</text>
+        <text class="lbl" x="216" y="248" text-anchor="middle">GNews-Gemini</text>
+
+        <rect class="barB" x="290" y="139" width="72" height="93"/>
+        <text class="val" x="326" y="131" text-anchor="middle">48.3</text>
+        <text class="lbl" x="326" y="248" text-anchor="middle">ISOT → GN-G</text>
+
+        <rect class="barB" x="400" y="133" width="72" height="99"/>
+        <text class="val" x="436" y="125" text-anchor="middle">51.5</text>
+        <text class="lbl" x="436" y="248" text-anchor="middle">GN-G → ISOT</text>
+
+        <rect class="barA" x="510" y="42"  width="72" height="190"/>
+        <text class="val" x="546" y="34" text-anchor="middle">99.7</text>
+        <text class="lbl" x="546" y="248" text-anchor="middle">Authorship</text>
+      </svg>
+      <figcaption>
+        Accuracy (%) for within-dataset veracity detection, cross-dataset transfer in both
+        directions, and the authorship baseline. The two transfer conditions sit on the
+        chance line; predicting who wrote the text is close to perfect.
+      </figcaption>
+    </figure>
+
+    <h2>Results</h2>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Condition</th><th>Accuracy</th><th>F1</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ISOT, within-dataset</td><td class="num">99.3%</td><td class="num">99.3%</td></tr>
+          <tr><td>GNews-Gemini, within-dataset</td><td class="num">96.9%</td><td class="num">96.9%</td></tr>
+          <tr><td>ISOT → GNews-Gemini</td><td class="num">48.3%</td><td class="num">20.0%</td></tr>
+          <tr><td>GNews-Gemini → ISOT</td><td class="num">51.5%</td><td class="num">25.8%</td></tr>
+          <tr><td>Mixed training</td><td class="num">97.4%</td><td class="num">97.4%</td></tr>
+          <tr><td>Authorship (human vs LLM fakes)</td><td class="num">99.7%</td><td class="num">99.7%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Transfer collapses to chance in both directions. The F1 scores are the more damning
+      number: 20.0% and 25.8% indicate the models are not merely uncertain, they are failing
+      systematically on one class.
+    </p>
+
+    <h3>Authorship dominates veracity</h3>
+    <p>
+      To test whether the authorship boundary explains the collapse, the same architecture
+      was trained to separate ISOT fakes from Gemini fakes. Both classes are fake, so
+      veracity carries no signal at all. That classifier reached <strong>99.7%</strong>.
+    </p>
+
+    <div class="pullquote">
+      The stylistic gap between human and machine text is larger than anything the two kinds
+      of fakes have in common, so a veracity model will learn the former and report it as
+      the latter.
+    </div>
+
+    <h3>The control that rules out the obvious objection</h3>
+    <p>
+      An obvious alternative explanation is that the model simply cannot generalise to unseen
+      manipulation types. The leave-one-strategy-out experiments rule this out: training on
+      four Gemini strategies and testing on the fifth yields <strong>92.3% to 97.5%</strong>
+      accuracy on every held-out strategy. Models transfer cleanly across manipulation
+      strategy when authorship is held constant, and fail completely when it is not. The
+      failure is specific to source.
+    </p>
+
+    <h3>Why the linguistic features cannot rescue it</h3>
+    <p>
+      Classic misinformation markers do not merely weaken across the boundary, they reverse.
+      Relative to real news, ISOT human-authored fakes show a <strong>+779%</strong> increase
+      in first-person pronouns and are 29% more readable. LLM fakes invert both:
+      first-person pronouns drop 53% and readability falls 41%, meaning more complex text.
+      Quotation use goes from −59% in ISOT to +147% in GNews-Gemini, and hedging from −1% to
+      +88%.
+    </p>
+    <p>
+      A detector that has learned "oversimplified text with first-person pronouns implies
+      misinformation" is therefore not just uninformed about LLM fakes, it is actively
+      miscalibrated against them. Only two markers point the same way in both corpora:
+      subjectivity rises and source attribution falls.
+    </p>
+
+    <h3>Where the signal lives</h3>
+    <p>
+      Silhouette scores on base RoBERTa embeddings, before any fine-tuning, show almost no
+      intrinsic structure: 0.015 by dataset and 0.016 by veracity. Within ISOT, veracity
+      separation reaches 0.046, but within GNews-Gemini only 0.014. Authorship separation
+      among the fakes is 0.043, roughly as strong as the best veracity signal anywhere in the
+      data and about three times the dataset-level drift.
+    </p>
+    <p>
+      That last comparison also addresses the temporal confound. ISOT is from 2016 to 2017
+      and GNews-Gemini from 2021 to 2024, so era rather than authorship could in principle
+      drive the collapse. But restricted to real news only, source separation is 0.014, far
+      below the 0.043 authorship separation among fakes. Authorship dominates temporal drift.
+    </p>
+
+    <h2>Implications</h2>
+    <ul>
+      <li>
+        <strong>Reported accuracies are optimistic in a specific direction.</strong> Any
+        detector benchmarked on a corpus where authorship and veracity are confounded is
+        reporting a number that will not survive deployment against LLM-generated content.
+      </li>
+      <li>
+        <strong>The failure is silent.</strong> The model does not become uncertain when it
+        crosses the boundary. It stays confident and becomes wrong, which is the worst
+        available combination for a moderation pipeline.
+      </li>
+      <li>
+        <strong>It is fixable with data, not architecture.</strong> Mixed training recovers
+        97.4%, so the problem is coverage rather than model capacity. The catch is that
+        coverage requires representative samples from each new generative model, which is a
+        moving target.
+      </li>
+      <li>
+        <strong>Evaluation design was the intervention.</strong> No amount of further
+        fine-tuning on a confounded benchmark would have surfaced this. Building the dataset
+        that separates the two factors is what made it visible.
+      </li>
+    </ul>
+
+    <h2>Limitations</h2>
+    <p>
+      Three worth stating plainly. The synthetic fakes come from a single model, so other
+      model families may carry different linguistic signatures, though the leave-one-strategy-out
+      consistency is mild evidence for stability within a generator. The texts are news
+      snippets, title plus description at roughly 212 characters, which reflects how most
+      people encounter news on social media but may hide patterns that only appear in
+      full-length articles. And the datasets differ in era as well as authorship, which the
+      embedding analysis argues against as an explanation but does not eliminate by design.
+    </p>
+
+    <p style="margin-top:2.4rem;color:var(--text-faint);font-size:0.875rem">
+      Presented as an oral at the International Conference on Big Data
+      Analytics (ICBDA) 2026, where it received the Best Presentation Award. Work carried out
+      at the Predictive Analytics and AI Research Lab, NYU Courant, advised by
+      Prof. Anasse Bari.
+    </p>
+
+    <div class="next-links">
+      <a class="next-link" href="ivim-histology-validation.html">
+        <p class="eyebrow">Next</p>
+        <strong>Validating diffusion MRI against tumour histology</strong>
+      </a>
+      <a class="next-link" href="figure-table-extraction.html">
+        <p class="eyebrow">Also</p>
+        <strong>Extracting figures and tables from scientific PDFs</strong>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>© <span id="year">2026</span> Deepesh Goel</span>
+    <span><a href="../index.html">deepeshgoel.com</a></span>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

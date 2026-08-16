@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validating diffusion MRI against tumour histology | Deepesh Goel</title>
+<meta name="description" content="IVIM diffusion MRI parameters and radiomics correlated against quantitative multiplex immunofluorescence and pathologist scoring in excised kidney tumours. ISMRM 2026.">
+<link rel="canonical" href="https://www.deepeshgoel.com/work/ivim-histology-validation.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Validating diffusion MRI against tumour histology">
+<meta property="og:description" content="Which IVIM parameters actually track tumour biology, tested against the resected tissue itself.">
+<meta property="og:image" content="https://www.deepeshgoel.com/assets/og-image.jpg">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon.ico" sizes="any">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="../assets/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;650&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../index.html">Deepesh Goel</a>
+    <div class="nav-links">
+      <a href="../index.html#research" class="nav-hide-xxs">Background</a>
+      <a href="../index.html#work">Work</a>
+      <a href="../index.html#publications" class="nav-hide-xs">Publications</a>
+      <a href="../index.html#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+
+<header class="article-head">
+  <div class="wrap-narrow">
+    <a class="back-link" href="../index.html#work"><span>←</span> Selected work</a>
+    <p class="eyebrow">ISMRM 2026 · Oral</p>
+    <h1>Validating diffusion MRI against tumour histology</h1>
+    <p class="lede">
+      IVIM diffusion MRI is meant to report on tissue microstructure and microvascular
+      perfusion without contrast agents. Whether the fitted parameters correspond to the
+      biology they are named after is an empirical question, and answering it requires the
+      tissue itself.
+    </p>
+    <div class="article-meta">
+      <span class="chip">Diffusion MRI (IVIM)</span>
+      <span class="chip">Radiomics</span>
+      <span class="chip">Multiplex immunofluorescence</span>
+      <span class="chip">Spearman correlation</span>
+      <span class="chip">PI: Dr. Eric Sigmund</span>
+    </div>
+  </div>
+</header>
+
+<div class="article-body">
+  <div class="wrap-narrow">
+
+    <h2>The clinical motivation</h2>
+    <p>
+      A meaningful number of kidney lesions turn out to be benign or indolent, and a
+      meaningful number of biopsies and surgeries are therefore avoidable in hindsight. A
+      non-invasive test that distinguishes tumour biology before the operation would change
+      that calculus, both by reducing unnecessary procedures and by improving surgical
+      planning through pre-operative tissue assessment.
+    </p>
+    <p>
+      Intravoxel incoherent motion (IVIM) is a candidate. The model separates the
+      diffusion-weighted signal into tissue diffusivity D<sub>t</sub>, which should reflect
+      cellular density and organisation, and two microvascular terms: perfusion fraction
+      f<sub>p</sub> and pseudo-diffusivity D<sub>p</sub>. IVIM has shown promise for renal
+      tumour diagnosis and subtyping, but validation against detailed histopathology has
+      been thinner than the clinical claims resting on it.
+    </p>
+
+    <div class="finding">
+      <p>
+        The gap this study addresses is specific. Prior work largely compared IVIM against
+        <strong>diagnosis</strong> or against other imaging. Here the comparison is against
+        the <strong>resected tissue</strong>, scored by pathologists and quantified by
+        multiplex immunofluorescence, in the same patients.
+      </p>
+    </div>
+
+    <h2>Design</h2>
+    <p>
+      Renal mass patients consented to pre-operative IVIM-DWI and then underwent partial
+      nephrectomy, so both imaging and tissue were available per patient. Twenty-seven
+      patients completed IVIM analysis, twenty-four had qualitative histopathology and
+      twenty-two had quantitative measurements.
+    </p>
+
+    <h3>Imaging</h3>
+    <p>
+      Abdominal imaging on a 3T MAGNETOM Prisma, respiratory-gated single-shot EPI,
+      2.13 × 2.13 × 5 mm resolution, eleven b-values from 0 to 800 s/mm² in three
+      directions, six-minute acquisition. Tumours were manually segmented in FireVoxel and a
+      segmented IVIM model was fitted for D<sub>t</sub>, f<sub>p</sub> and D<sub>p</sub>.
+    </p>
+    <p>
+      Rather than reducing each tumour to three mean values, histogram analysis extracted
+      mean, variance, skewness, kurtosis, entropy and nine percentiles for every parameter.
+      This is the part that matters methodologically. A tumour is heterogeneous, and the
+      mean discards exactly the heterogeneity that distinguishes one tumour from another.
+    </p>
+
+    <h3>Histology</h3>
+    <p>
+      Two independent readouts from the same tissue. Pathologists scored vascularity (1 to
+      3), inflammation (0 to 1), cyst presence (0 to 3) and fibrosis (0 to 3) on H&amp;E
+      sections. Separately, multiplex immunofluorescence was quantified in HALO across five
+      channels: DAPI for cell nuclei, CD31 for mature vessels, CD34 for immature vessels,
+      pan-cytokeratin for epithelial cells, and unstained "negative" area. Measurements
+      covered stain areal fractions and microvasculature descriptors.
+    </p>
+    <p>
+      Association was tested with Spearman rank correlation at p ≤ 0.05, chosen over Pearson
+      because several histology readouts are ordinal scores rather than continuous
+      quantities and the relationships were not assumed linear.
+    </p>
+
+    <figure class="figure">
+      <svg viewBox="0 0 640 210" role="img" aria-label="Diagram: pre-operative IVIM imaging and post-operative histology from the same patients feed a correlation analysis">
+        <defs>
+          <style>
+            .bx  { fill: var(--bg-raised); stroke: var(--rule-strong); stroke-width: 1; }
+            .tl  { font: 600 11.5px var(--sans); fill: var(--text); }
+            .ts  { font: 400 10px var(--sans); fill: var(--text-faint); }
+            .ar  { stroke: var(--text-faint); stroke-width: 1.1; fill: none; marker-end: url(#a); }
+          </style>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--text-faint)"/>
+          </marker>
+        </defs>
+
+        <text class="ts" x="14" y="14">Pre-operative</text>
+        <rect class="bx" x="12" y="24" width="132" height="46"/>
+        <text class="tl" x="78" y="43" text-anchor="middle">IVIM-DWI</text>
+        <text class="ts" x="78" y="58" text-anchor="middle">3T, b = 0–800 s/mm²</text>
+
+        <path class="ar" d="M150 47 H186"/>
+
+        <rect class="bx" x="194" y="24" width="152" height="46"/>
+        <text class="tl" x="270" y="43" text-anchor="middle">Dt · fp · Dp maps</text>
+        <text class="ts" x="270" y="58" text-anchor="middle">+ histogram radiomics</text>
+
+        <text class="ts" x="14" y="128">Post-operative</text>
+        <rect class="bx" x="12" y="138" width="132" height="46"/>
+        <text class="tl" x="78" y="157" text-anchor="middle">Resected tissue</text>
+        <text class="ts" x="78" y="172" text-anchor="middle">partial nephrectomy</text>
+
+        <path class="ar" d="M150 161 H186"/>
+
+        <rect class="bx" x="194" y="120" width="152" height="36"/>
+        <text class="tl" x="270" y="135" text-anchor="middle">H&amp;E scoring</text>
+        <text class="ts" x="270" y="149" text-anchor="middle">vascularity · fibrosis · cyst</text>
+
+        <rect class="bx" x="194" y="164" width="152" height="36"/>
+        <text class="tl" x="270" y="179" text-anchor="middle">IHC in HALO</text>
+        <text class="ts" x="270" y="193" text-anchor="middle">DAPI · CD31 · CD34 · PanCK</text>
+
+        <path class="ar" d="M352 47 Q404 47 404 88 H438"/>
+        <path class="ar" d="M352 138 Q404 138 404 96 H438"/>
+        <path class="ar" d="M352 182 Q416 182 416 100 H438"/>
+
+        <rect class="bx" x="446" y="70" width="182" height="46"/>
+        <text class="tl" x="537" y="89" text-anchor="middle">Spearman correlation</text>
+        <text class="ts" x="537" y="104" text-anchor="middle">p ≤ 0.05, same patients</text>
+      </svg>
+      <figcaption>
+        Imaging and tissue come from the same patients, weeks apart. Because both readouts
+        describe the whole tumour rather than matched locations, the analysis compares
+        summary statistics rather than attempting voxel-to-slide correspondence.
+      </figcaption>
+    </figure>
+
+    <h2>Results</h2>
+
+    <h3>Against pathologist scoring</h3>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Histology score</th><th>Correlated IVIM parameter</th><th>Reading</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Vascularity</td>
+            <td class="num">D<sub>p</sub> mean, D<sub>p</sub> entropy</td>
+            <td>Sensitivity to micro-vascularity</td>
+          </tr>
+          <tr>
+            <td>Inflammation</td>
+            <td class="num">D<sub>t</sub> mean, (D<sub>p</sub>×f<sub>p</sub>) variance</td>
+            <td>Restricted diffusion with heterogeneous perfusion</td>
+          </tr>
+          <tr>
+            <td>Cyst presence</td>
+            <td class="num">D<sub>t</sub> mean, D<sub>t</sub> variance</td>
+            <td>Elevated diffusivity in fluid-filled space</td>
+          </tr>
+          <tr>
+            <td>Fibrosis</td>
+            <td class="num">f<sub>p</sub> mean, D<sub>t</sub> variance</td>
+            <td>Indirect, see below</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      The fibrosis result is the one that needs care. A correlation with perfusion fraction
+      is not obviously mechanistic, and the most plausible reading is indirect: fibrotic
+      tissue relaxes fast enough to drop out of the measured signal, which shifts the
+      apparent weighting toward vascular flow volumes. That is an interpretation, not a
+      demonstration, and it is worth flagging as such.
+    </p>
+
+    <h3>Against quantitative immunofluorescence</h3>
+    <p>
+      D<sub>t</sub> mean correlated negatively with DAPI areal fraction and positively with
+      unstained areal fraction. Both point the same way: water diffuses less freely where
+      nuclei are densely packed, and more freely in minimally restricted space.
+      D<sub>p</sub> at the 5th percentile correlated positively with CD34 areal percentage,
+      tying pseudo-diffusivity to immature vessel content, with p &lt; 0.01 throughout.
+    </p>
+
+    <div class="pullquote">
+      Tissue diffusivity tracks cellular packing. Pseudo-diffusivity tracks vasculature.
+      The parameters do broadly measure what their names claim.
+    </div>
+
+    <p>
+      D<sub>t</sub> mean, the most conventional IVIM parameter, proved sensitive to most
+      quantitative histologic features including micro-vascularisation. That breadth is a
+      mixed result: sensitive but not specific, which limits how much diagnostic weight a
+      single mean value can carry on its own. The radiomics were more discriminating, and
+      D<sub>t</sub> radiomics in particular were the most sensitive to microstructural
+      features.
+    </p>
+
+    <h2>What this supports, and what it doesn't</h2>
+    <ul>
+      <li>
+        <strong>Supports:</strong> IVIM parameters carry real information about renal tumour
+        microstructure, validated against tissue rather than against another imaging method.
+        That is the evidence a non-invasive biomarker needs before it can carry clinical
+        weight.
+      </li>
+      <li>
+        <strong>Supports:</strong> distributional features beat means. Entropy, variance and
+        percentiles surfaced relationships that mean values alone did not, which argues for
+        treating parameter maps as distributions rather than collapsing them to a number.
+      </li>
+      <li>
+        <strong>Does not support:</strong> voxel-level inference. Imaging and tissue were
+        never spatially registered, and the study establishes agreement between tumour-level
+        summaries only. Nothing here says what any individual voxel contains.
+      </li>
+      <li>
+        <strong>Caveat:</strong> the cohort is small, single-institution and single organ,
+        and microvascular features were relatively sparse on histology, which may have
+        weakened their measured relationships with global MR features. These are grounds for
+        a larger study, not a substitute for one.
+      </li>
+    </ul>
+
+    <p style="margin-top:2.4rem;color:var(--text-faint);font-size:0.875rem">
+      Presented as an oral at ISMRM 2026, in the Advances in Renal MRI session. Work carried
+      out at the Center for Advanced Imaging Innovation and Research (CAI2R), NYU Grossman
+      School of Medicine, with Dr. Eric Sigmund, Dr. Nima Gilani and Dr. Hersh Chandarana. Supported by NIH
+      R01CA245671 and NIBIB P41 EB017183. A companion study on individual kidney function
+      decline after partial nephrectomy was also presented at ISMRM 2026.
+    </p>
+
+    <div class="next-links">
+      <a class="next-link" href="figure-table-extraction.html">
+        <p class="eyebrow">Next</p>
+        <strong>Extracting figures and tables from scientific PDFs</strong>
+      </a>
+      <a class="next-link" href="jepa-world-model.html">
+        <p class="eyebrow">Also</p>
+        <strong>A JEPA world model that learns without reconstructing</strong>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>© <span id="year">2026</span> Deepesh Goel</span>
+    <span><a href="../index.html">deepeshgoel.com</a></span>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
